@@ -47,7 +47,9 @@ extern const unsigned char sz32[];                     /**< 32x32像素数字字
 extern const struct typFNT_GB162 hz16[];              /**< 16x16中文字符字模数据数组 */
 extern const struct typFNT_GB242 hz24[];              /**< 24x24中文字符字模数据数组 */
 extern const unsigned char gImage_weather[3208];       /**< 天气图片数据 (40x40像素) */
-
+extern const unsigned char gImage_humi[908] ;          /**< 湿度图片数据 (40x40像素) */
+extern const unsigned char gImage_temp[558];          /**< 温度图片数据 (40x40像素) */
+extern const unsigned char gImage_clock[2458];        /**< 时钟图片数据 (40x40像素) */
 /**
  * @brief 字体数量定义
  */

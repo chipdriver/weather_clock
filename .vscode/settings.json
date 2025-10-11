@@ -22,6 +22,8 @@
         "string.h": "c",
         "stm32f4xx_hal.h": "c",
         "esp32_weather.h": "c",
-        "font.h": "c"
+        "font.h": "c",
+        "dht11.h": "c",
+        "stdint.h": "c"
     }
 }

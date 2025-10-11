@@ -1,9 +1,5 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
   * @attention
   *
   * Copyright (c) 2025 STMicroelectronics.
@@ -107,22 +103,18 @@ int main(void)
   
   
   // 显示天气图片 (40x40像素)
-  Gui_DrawImage(10, 10, gImage_weather);  // 在(10,10)位置显示天气图片
+  Gui_DrawImage(1, 1, gImage_weather);  // 在(1,1)位置显示天气图片
 
-  
+  // 显示湿度图标 (40x40像素)
+  Gui_DrawImage(10, 95, gImage_humi);  // 在(1,100)位置显示湿度图标
+
+  Gui_DrawImage(66, 95, gImage_temp);  // 在(66,100)位置显示温度图标
+
+  Gui_DrawImage(1,45,gImage_clock); // 在(1,45)位置显示时钟图标
   // 初始化DHT11传感器
-  HAL_UART_Transmit(&huart1, (uint8_t*)"=== DHT11 Temperature & Humidity Sensor ===\r\n", 46, 1000);
-  HAL_UART_Transmit(&huart1, (uint8_t*)"Initializing DHT11...\r\n", 23, 1000);
-  
-  if (DHT11_Init()) {
-    HAL_UART_Transmit(&huart1, (uint8_t*)"DHT11 initialized successfully!\r\n", 33, 1000);
-  } else {
-    HAL_UART_Transmit(&huart1, (uint8_t*)"DHT11 initialization failed!\r\n", 30, 1000);
-  }
-  
-  HAL_UART_Transmit(&huart1, (uint8_t*)"DHT11 connected to PA6\r\n", 24, 1000);
-  HAL_UART_Transmit(&huart1, (uint8_t*)"Reading every 5 seconds...\r\n\r\n", 29, 1000);
-
+  DHT11_Init();
+  int humidity, temperature;
+  char buffer[100];
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -134,33 +126,18 @@ int main(void)
     /* USER CODE BEGIN 3 */
     
     // 读取DHT11温湿度数据
-    int humidity, temperature;
-    char buffer[100];
-    
-    HAL_UART_Transmit(&huart1, (uint8_t*)"Reading DHT11... ", 17, 1000);
-    
-    if (DHT11_Read(&humidity, &temperature)) {
-      // 读取成功，显示数据
-      sprintf(buffer, "Success!\r\nTemperature: %d°C\r\nHumidity: %d%%\r\n", temperature, humidity);
-      HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), 1000);
-      
-      // 数据验证
-      if (temperature >= -40 && temperature <= 80 && humidity >= 0 && humidity <= 100) {
-        HAL_UART_Transmit(&huart1, (uint8_t*)"Data is valid!\r\n\r\n", 19, 1000);
-      } else {
-        HAL_UART_Transmit(&huart1, (uint8_t*)"Warning: Data out of range!\r\n\r\n", 31, 1000);
-      }
-    } else {
-      // 读取失败
-      HAL_UART_Transmit(&huart1, (uint8_t*)"Failed!\r\n", 9, 1000);
-      HAL_UART_Transmit(&huart1, (uint8_t*)"Check DHT11 connections:\r\n", 26, 1000);
-      HAL_UART_Transmit(&huart1, (uint8_t*)"  VCC  -> 3.3V\r\n", 16, 1000);
-      HAL_UART_Transmit(&huart1, (uint8_t*)"  GND  -> GND\r\n", 15, 1000);
-      HAL_UART_Transmit(&huart1, (uint8_t*)"  DATA -> PA6\r\n\r\n", 17, 1000);
-    }
-    
-    // 等待5秒再读取
-    HAL_Delay(5000);
+
+    DHT11_Read(&humidity, &temperature);
+    // 读取成功，显示数据
+    //Gui_DrawFont_GBK16(95,95,BLACK, WHITE, "涵");
+    sprintf(buffer, "%d",humidity);
+    Gui_DrawString(30,100,BLACK, WHITE, buffer);
+    sprintf(buffer, "%d",temperature);
+    Gui_DrawString(80,100,BLACK, WHITE, buffer);
+    HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), 1000);
+
+    // 等待2秒再读取
+    HAL_Delay(2000);
     
   }
   /* USER CODE END 3 */
