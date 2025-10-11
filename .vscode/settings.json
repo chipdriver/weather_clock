@@ -16,6 +16,12 @@
         "main.h": "c",
         "lcd_driver.h": "c",
         "GUI.C": "cpp",
-        "gui.h": "c"
+        "gui.h": "c",
+        "usart.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "stm32f4xx_hal.h": "c",
+        "esp32_weather.h": "c",
+        "font.h": "c"
     }
 }

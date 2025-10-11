@@ -48,12 +48,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     "LCD/Src/lcd_Driver.c"
     "LCD/Src/GUI.c"
     "LCD/Src/font.c"
+    "ESP32_Weather/Src/esp32_weather.c"
+    "dht11/Src/dht11.c"
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     "LCD/Inc"
+    "ESP32_Weather/Inc"
+    "dht11/Inc"  
 )
 
 # Add project symbols (macros)
