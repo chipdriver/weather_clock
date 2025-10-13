@@ -14,6 +14,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
 #include "gpio.h"
@@ -95,12 +96,15 @@ int main(void)
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
   
-  // 初始化LCD
+  // 初始化LCD  
   Lcd_Init();
-  
+  DHT11_Init();
+
+  int humidity, temperature;
+  char buffer[100] = {0};
+
   // 清屏为黑色
   Lcd_Clear(WHITE);
-  
   
   // 显示天气图片 (40x40像素)
   Gui_DrawImage(1, 1, gImage_weather);  // 在(1,1)位置显示天气图片
@@ -110,11 +114,19 @@ int main(void)
 
   Gui_DrawImage(66, 95, gImage_temp);  // 在(66,100)位置显示温度图标
 
-  Gui_DrawImage(1,45,gImage_clock); // 在(1,45)位置显示时钟图标
-  // 初始化DHT11传感器
-  DHT11_Init();
-  int humidity, temperature;
-  char buffer[100];
+  Gui_DrawImage(1,45,gImage_clock); // 在(1,45)位置显示时钟图标;
+
+  // 3. 访问天气数据 - 通过UART6输出到调试串口
+  char debug_msg[100] = { 0 };
+
+  HAL_UART_Transmit(&huart1, (uint8_t*)"AT\r\n", 4, 1000);
+  HAL_Delay(3000);
+  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 15, 1000);
+  HAL_Delay(3000);
+  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"Niceday\",\"178536586471\"\r\n", 36, 1000);
+  HAL_Delay(10000);
+  HAL_UART_Receive(&huart1, (uint8_t*)debug_msg, sizeof(debug_msg), 10000);
+  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,16 +137,16 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     
-    // 读取DHT11温湿度数据
-
+    /*读取DHT11温湿度数据*/
     DHT11_Read(&humidity, &temperature);
     // 读取成功，显示数据
-    //Gui_DrawFont_GBK16(95,95,BLACK, WHITE, "涵");
     sprintf(buffer, "%d",humidity);
     Gui_DrawString(30,100,BLACK, WHITE, buffer);
     sprintf(buffer, "%d",temperature);
-    Gui_DrawString(80,100,BLACK, WHITE, buffer);
-    HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), 1000);
+    if(temperature>30)
+      Gui_DrawString(80,100,RED, WHITE, buffer);
+    else
+      Gui_DrawString(80,100,BLACK, WHITE, buffer);
 
     // 等待2秒再读取
     HAL_Delay(2000);

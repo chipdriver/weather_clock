@@ -21,7 +21,9 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "stdarg.h"
+#include "string.h"
+#include "stdio.h"
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -182,5 +184,72 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 }
 
 /* USER CODE BEGIN 1 */
+char USART1_TxBuff[1024] __attribute__((aligned(8)));
+char USART6_TxBuff[1024] __attribute__((aligned(8)));  // 用USART6代替USART2
 
+/**
+ * @brief 发送单个字节到UART
+ * @param huart: UART句柄指针
+ * @param ch: 要发送的字符
+ */
+void TransByte(UART_HandleTypeDef *huart, uint8_t ch)
+{
+    // ✅ 修复：STM32F4使用SR寄存器，不是ISR
+    while(!(huart->Instance->SR & UART_FLAG_TXE));
+    
+    // ✅ 修复：STM32F4使用DR寄存器，不是TDR
+    huart->Instance->DR = ch;
+}
+
+/**
+ * @brief 通过UART1发送格式化字符串（发送给ESP32）
+ * @param fmt: 格式化字符串
+ * @param ...: 可变参数
+ */
+void u1_printf(char* fmt, ...)
+{
+    unsigned int i = 0, length = 0;
+    va_list ap;
+    
+    va_start(ap, fmt);
+    vsprintf(USART1_TxBuff, fmt, ap);
+    va_end(ap);
+    
+    length = strlen((const char*)USART1_TxBuff);
+
+    while(i < length)
+    {
+        TransByte(&huart1, USART1_TxBuff[i]);
+        i++;
+    }
+
+    // ✅ 修复：等待传输完成，STM32F4使用TC标志
+    while(!(huart1.Instance->SR & UART_FLAG_TC));
+}
+
+/**
+ * @brief 通过UART6发送格式化字符串（调试输出）
+ * @param fmt: 格式化字符串  
+ * @param ...: 可变参数
+ */
+void u6_printf(char* fmt, ...)
+{
+    unsigned int i = 0, length = 0;
+    va_list ap;
+    
+    va_start(ap, fmt);
+    vsprintf(USART6_TxBuff, fmt, ap);
+    va_end(ap);
+    
+    length = strlen((const char*)USART6_TxBuff);
+
+    while(i < length)
+    {
+        TransByte(&huart6, USART6_TxBuff[i]);
+        i++;
+    }
+
+    // ✅ 修复：等待传输完成
+    while(!(huart6.Instance->SR & UART_FLAG_TC));
+}
 /* USER CODE END 1 */

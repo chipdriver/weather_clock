@@ -24,6 +24,7 @@
         "esp32_weather.h": "c",
         "font.h": "c",
         "dht11.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "stdarg.h": "c"
     }
 }

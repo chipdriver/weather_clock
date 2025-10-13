@@ -42,7 +42,8 @@ extern UART_HandleTypeDef huart6;
 
 void MX_USART1_UART_Init(void);
 void MX_USART6_UART_Init(void);
-
+void u1_printf(char* fmt, ...);
+void u6_printf(char* fmt, ...);
 /* USER CODE BEGIN Prototypes */
 
 /* USER CODE END Prototypes */
