@@ -116,17 +116,7 @@ int main(void)
 
   Gui_DrawImage(1,45,gImage_clock); // 在(1,45)位置显示时钟图标;
 
-  // 3. 访问天气数据 - 通过UART6输出到调试串口
-  char debug_msg[100] = { 0 };
-
-  HAL_UART_Transmit(&huart1, (uint8_t*)"AT\r\n", 4, 1000);
-  HAL_Delay(3000);
-  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 15, 1000);
-  HAL_Delay(3000);
-  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"Niceday\",\"178536586471\"\r\n", 36, 1000);
-  HAL_Delay(10000);
-  HAL_UART_Receive(&huart1, (uint8_t*)debug_msg, sizeof(debug_msg), 10000);
-  
+  wifi_connect();
   /* USER CODE END 2 */
 
   /* Infinite loop */
