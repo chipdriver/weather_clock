@@ -16,5 +16,7 @@
 uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms);
 void wifi_connect(void);
 uint8_t AT_SendFormatAndWait(const char *expect, uint32_t timeout_ms, const char *format, ...);
-uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms);
+void get_weather(void);
+void parse_weather_json(void);
+void receive_weather_data_immediate(void);
 #endif /* __ESP32_WEATHER_H__ */

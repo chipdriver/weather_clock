@@ -350,7 +350,7 @@ void Gui_DrawFont_GBK16(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint8_
 
 	while(*s) 
 	{	
-		if((*s) < 128) 
+		if((*s) < 0x80) 
 		{
 			k=*s;
 			if (k==13) 

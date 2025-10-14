@@ -50,10 +50,11 @@ extern const unsigned char gImage_weather[3208];       /**< 天气图片数据 (
 extern const unsigned char gImage_humi[908] ;          /**< 湿度图片数据 (40x40像素) */
 extern const unsigned char gImage_temp[558];          /**< 温度图片数据 (40x40像素) */
 extern const unsigned char gImage_clock[2458];        /**< 时钟图片数据 (40x40像素) */
+extern const unsigned char gImage_line[648];
 /**
  * @brief 字体数量定义
  */
-#define hz16_num   2    /* 当前已定义的16x16中文字符数量 */
+#define hz16_num   4    /* 当前已定义的16x16中文字符数量 */
 #define hz24_num   1    /* 当前已定义的24x24中文字符数量 */
 
 /* 
