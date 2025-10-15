@@ -4,9 +4,13 @@
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
 #include "GUI.h"  
+
 static char esp32_rx_buffer[RXBUFFER];
-static uint16_t esp32_rx_index = 0;//1.为什么加static？ 2.这个是干嘛的？
+static uint16_t esp32_rx_index = 0;
 char weather_msg[256];
+
+
+/*====================================================================第0层：通信基础=======================================================================*/
 /**
  * @brief 发送AT指令并等待指定响应
  * @param cmd AT指令（不需要加\r\n)
@@ -19,7 +23,7 @@ char weather_msg[256];
 uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
 {
     uint8_t esp32_rx_char;
-    uint32_t start_time;//这个为什么是32位的
+    uint32_t start_time;
 
     //参数检查
     if(cmd == NULL || expect == NULL || timeout_ms == 0)
@@ -32,11 +36,11 @@ uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
     esp32_rx_index = 0;
 
     //发送AT指令
-    HAL_UART_Transmit(&huart1, (uint8_t *)cmd, strlen(cmd), 1000);//3.strlen什么作用
+    HAL_UART_Transmit(&huart1, (uint8_t *)cmd, strlen(cmd), 1000);
     HAL_UART_Transmit(&huart1, (uint8_t *)"\r\n", 2, 1000);
 
     //开始计时
-    start_time = HAL_GetTick();//4.这个函数是干嘛的
+    start_time = HAL_GetTick();
 
     //循环接收响应
     while(HAL_GetTick() - start_time <timeout_ms)
@@ -46,10 +50,10 @@ uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
             //防止缓冲区溢出
             if(esp32_rx_index < sizeof(esp32_rx_buffer) - 1)
             {
-                esp32_rx_buffer[esp32_rx_index++] = esp32_rx_char; //5.esp32_rx_buffer[esp32_rx_index++]  与 esp32_rx_buffer[++esp32_rx_index]是什么关系？
+                esp32_rx_buffer[esp32_rx_index++] = esp32_rx_char; 
                 esp32_rx_buffer[esp32_rx_index] = '\0'; //保持字符串结束符
 
-                if(strstr(esp32_rx_buffer,expect) != NULL)//6.这个函数是干嘛的
+                if(strstr(esp32_rx_buffer,expect) != NULL)
                 {
                     return 0; // 找到期望响应
                 }
@@ -58,6 +62,7 @@ uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
     }
     return 1; // 超时未找到期望响应
 }
+
 
 /**
  * @brief 发送格式化AT指令并等待指定响应
@@ -93,6 +98,8 @@ uint8_t AT_SendFormatAndWait(const char *expect, uint32_t timeout_ms, const char
 }
 
 
+
+/*====================================================================WiFi连接=======================================================================*/
 /**
  * @brief 连接wifi
  * @param None
@@ -108,6 +115,7 @@ void wifi_connect(void)
         HAL_UART_Transmit(&huart6,(uint8_t *)"wifi连接成功\n", 18, 1000);
 }
 
+/*====================================================================天气信息=======================================================================*/
 /**
  * @brief 获取天气以及温湿度
  * @param 
