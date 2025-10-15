@@ -243,7 +243,7 @@ void parse_weather_json(void)
         HAL_UART_Transmit(&huart6, (uint8_t*)weather_msg, strlen(weather_msg), 1000);
         char lcd_temp[20];
         sprintf(lcd_temp, "%s", temp_str);  // 英文显示，无换行符
-        Gui_DrawString(100, 10, BLACK, WHITE, lcd_temp);
+        Gui_DrawAsciiString(100, 10, BLACK, WHITE, lcd_temp);
 
     }
     
@@ -253,6 +253,7 @@ void parse_weather_json(void)
         HAL_UART_Transmit(&huart6, (uint8_t*)weather_msg, strlen(weather_msg), 1000);
         char lcd_weather[20];
         sprintf(lcd_weather, "%s", condition_str);  // 英文显示，无换行符
+        Gui_DrawAsciiString(10, 10, BLACK, WHITE, lcd_weather);
     }
 
     // ✅ 修复：发送到调试串口

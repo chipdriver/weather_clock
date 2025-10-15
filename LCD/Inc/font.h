@@ -42,15 +42,17 @@ struct typFNT_GB242
 /**
  * @brief 字体数据数组外部声明
  */
-extern const unsigned char asc16[];                    /**< ASCII字符字模数据数组 (8x16像素) */
 extern const unsigned char sz32[];                     /**< 32x32像素数字字体数据数组 */
 extern const struct typFNT_GB162 hz16[];              /**< 16x16中文字符字模数据数组 */
 extern const struct typFNT_GB242 hz24[];              /**< 24x24中文字符字模数据数组 */
-extern const unsigned char gImage_weather[3208];       /**< 天气图片数据 (40x40像素) */
-extern const unsigned char gImage_humi[908] ;          /**< 湿度图片数据 (40x40像素) */
-extern const unsigned char gImage_temp[558];          /**< 温度图片数据 (40x40像素) */
-extern const unsigned char gImage_clock[2458];        /**< 时钟图片数据 (40x40像素) */
-extern const unsigned char gImage_line[648];
+extern const unsigned char ascii_font[95][16];           /**< 95个可打印ASCII字符的8x16字模 */
+
+extern const unsigned char gImage_weather[3208];       /**< 天气图片数据*/
+extern const unsigned char gImage_humo_nei[768];          /**< 湿度图片数据*/
+extern const unsigned char gImage_temp_nei[728];          /**<  温度图片数据*/
+extern const unsigned char gImage_clock[2458];        /**<  时钟图片数据*/
+extern const unsigned char gImage_temp_wai[768];          /**< 外部温度图片数据 */
+extern const unsigned char gImage_1[3288];       
 /**
  * @brief 字体数量定义
  */

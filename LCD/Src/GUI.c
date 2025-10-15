@@ -3,7 +3,7 @@
  * @file           : GUI.c
  * @brief          : 图形用户界面库 - 提供高级图形绘制功能
  *                   包括基本图形绘制、文字显示、按钮效果等功能
- * @author         : STM32 Weather Clock Project
+ * @author         : Chipdriver
  * @version        : V1.0
  * @date           : 2025-01-10
  ******************************************************************************
@@ -22,9 +22,7 @@
 #include <stdio.h>  // 用于sprintf
 #include "font.h"  
 
-// 函数声明
-void Gui_Draw8x16Char(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, char c);
-
+/*==================================================================颜色处理类=========================================================================*/
 /**
  * @brief  BGR格式颜色转换为RGB格式
  * @param  c: BGR格式的16位颜色值
@@ -40,6 +38,7 @@ uint16_t LCD_BGR2RGB(uint16_t c)
   return(rgb);
 }
 
+/*==================================================================基础几何图形类=========================================================================*/
 /**
  * @brief  绘制圆形（空心）
  * @param  X: 圆心X坐标
@@ -146,6 +145,8 @@ void Gui_DrawLine(uint16_t x0, uint16_t y0,uint16_t x1, uint16_t y1,uint16_t Col
     }
 }
 
+/*==================================================================矩形/框体类=========================================================================*/
+
 /**
  * @brief  绘制3D效果的矩形框
  * @param  x: 矩形左上角X坐标
@@ -157,11 +158,17 @@ void Gui_DrawLine(uint16_t x0, uint16_t y0,uint16_t x1, uint16_t y1,uint16_t Col
  */
 void Gui_box(uint16_t x, uint16_t y, uint16_t w, uint16_t h,uint16_t bc)
 {
-    Gui_DrawLine(x,y,x+w,y,0xEF7D);
-    Gui_DrawLine(x+w-1,y+1,x+w-1,y+1+h,0x2965);
-    Gui_DrawLine(x,y+h,x+w,y+h,0x2965);
-    Gui_DrawLine(x,y,x,y+h,0xEF7D);
-    Gui_DrawLine(x+1,y+1,x+1+w-2,y+1+h-2,bc);
+    Gui_DrawLine(x, y, x+w-1, y, 0xEF7D);           // 上边框（亮色-凸起效果）
+    Gui_DrawLine(x, y, x, y+h-1, 0xEF7D);           // 左边框（亮色-凸起效果）
+    Gui_DrawLine(x+w-1, y, x+w-1, y+h-1, 0x2965);  // 右边框（暗色-阴影效果）
+    Gui_DrawLine(x, y+h-1, x+w-1, y+h-1, 0x2965);  // 下边框（暗色-阴影效果）
+    
+    uint16_t i, j;
+    for(i = 1; i < h-1; i++) {
+        for(j = 1; j < w-1; j++) {
+            Gui_DrawPoint(x+j, y+i, bc);
+        }
+    }
 }
 
 /**
@@ -195,6 +202,8 @@ void Gui_box2(uint16_t x,uint16_t y,uint16_t w,uint16_t h, uint8_t mode)
     }
 }
 
+/*==================================================================按钮视觉效果类=========================================================================*/
+
 /**
  * @brief  绘制按下状态的按钮效果
  * @param  x1: 按钮左上角X坐标
@@ -205,12 +214,20 @@ void Gui_box2(uint16_t x,uint16_t y,uint16_t w,uint16_t h, uint8_t mode)
  */
 void DisplayButtonDown(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2)
 {
-    Gui_DrawLine(x1,  y1,  x2,y1, GRAY2);
-    Gui_DrawLine(x1+1,y1+1,x2,y1+1, GRAY1);
-    Gui_DrawLine(x1,  y1,  x1,y2, GRAY2);
-    Gui_DrawLine(x1+1,y1+1,x1+1,y2, GRAY1);
-    Gui_DrawLine(x1,  y2,  x2,y2, WHITE);
-    Gui_DrawLine(x2,  y1,  x2,y2, WHITE);
+    uint16_t i, j;
+    
+    for(i = y1+2; i < y2-1; i++) {
+        for(j = x1+2; j < x2-1; j++) {
+            Gui_DrawPoint(j, i, 0xC618);  // 按下状态的灰色背景
+        }
+    }
+    
+    Gui_DrawLine(x1,  y1,  x2,y1, GRAY2);        // 上边框（暗色）
+    Gui_DrawLine(x1+1,y1+1,x2-1,y1+1, GRAY1);    // 内上边框（中灰）
+    Gui_DrawLine(x1,  y1,  x1,y2, GRAY2);        // 左边框（暗色）
+    Gui_DrawLine(x1+1,y1+1,x1+1,y2-1, GRAY1);    // 内左边框（中灰）
+    Gui_DrawLine(x1,  y2,  x2,y2, WHITE);        // 下边框（亮色）
+    Gui_DrawLine(x2,  y1,  x2,y2, WHITE);        // 右边框（亮色）
 }
 
 /**
@@ -223,78 +240,46 @@ void DisplayButtonDown(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2)
  */
 void DisplayButtonUp(uint16_t x1,uint16_t y1,uint16_t x2,uint16_t y2)
 {
-    Gui_DrawLine(x1,  y1,  x2,y1, WHITE);
-    Gui_DrawLine(x1,  y1,  x1,y2, WHITE);
-    Gui_DrawLine(x1+1,y2-1,x2,y2-1, GRAY1);
-    Gui_DrawLine(x1,  y2,  x2,y2, GRAY2);
-    Gui_DrawLine(x2-1,y1+1,x2-1,y2, GRAY1);
-    Gui_DrawLine(x2  ,y1  ,x2,y2, GRAY2);
-}
-
-/**
- * @brief  显示数字（8x16像素字体）
- * @param  x: 显示起始X坐标
- * @param  y: 显示起始Y坐标
- * @param  fc: 前景色（字体颜色）
- * @param  bc: 背景色
- * @param  num: 要显示的数字
- * @return 无
- */
-void Gui_DrawNumber(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint32_t num)
-{
-    char str[12];  // 足够存储32位数字
-    sprintf(str, "%u", (unsigned int)num);
+    uint16_t i, j;
     
-    uint16_t pos_x = x;
-    for(int i = 0; str[i] != '\0'; i++) {
-        if(str[i] >= '0' && str[i] <= '9') {
-            Gui_Draw8x16Char(pos_x, y, fc, bc, str[i]);
-            pos_x += 8;
+    for(i = y1+2; i < y2-1; i++) {
+        for(j = x1+2; j < x2-1; j++) {
+            Gui_DrawPoint(j, i, 0xE71C);  // 弹起状态的浅灰色背景
         }
     }
+    Gui_DrawLine(x1,  y1,  x2,y1, WHITE);        // 上边框（亮色）
+    Gui_DrawLine(x1,  y1,  x1,y2, WHITE);        // 左边框（亮色）
+    Gui_DrawLine(x1+1,y2-1,x2-1,y2-1, GRAY1);    // 内下边框（中灰）
+    Gui_DrawLine(x1,  y2,  x2,y2, GRAY2);        // 下边框（暗色）
+    Gui_DrawLine(x2-1,y1+1,x2-1,y2-1, GRAY1);    // 内右边框（中灰）
+    Gui_DrawLine(x2,  y1,  x2,y2, GRAY2);        // 右边框（暗色）
 }
 
+
+/*================================================================== ASCII码显示类=========================================================================*/
+
 /**
- * @brief  显示单个8x16字符（仅支持数字0-9）
- * @param  x: 显示X坐标
- * @param  y: 显示Y坐标
- * @param  fc: 前景色（字体颜色）
- * @param  bc: 背景色
- * @param  c: 要显示的字符（'0'-'9'）
- * @return 无
+ * @brief 显示8x16像素英文字符（支持完整ASCII可打印字符）-单字符显示
+ * @details 支持显示8x16像素的英文字母、数字、符号等ASCII字符
+ *          从ascii_font[]字模数组中获取对应字符的字模数据进行显示
+ * @param x 显示起始X坐标（左上角）
+ * @param y 显示起始Y坐标（左上角）
+ * @param fc 前景色（字体颜色），16位RGB565格式
+ * @param bc 背景色，16位RGB565格式
+ * @param c 要显示的ASCII字符（0x20-0x7E）
+ * @note 每个字符占用8x16=128像素，字模数据16字节
+ * @note 支持字符范围：空格(' ')到波浪号('~')，共95个字符
+ * @note 字模数据存储在ascii_font[]数组中
+ * @example Gui_DrawAsciiChar(10, 20, WHITE, BLACK, 'A');
  */
-void Gui_Draw8x16Char(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, char c)
+void Gui_DrawAsciiChar(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, char c)
 {
-    if(c < '0' || c > '9') return;  // 只支持数字
+    if(c < 0x20 || c > 0x7E) return;  // 只支持可打印ASCII字符
     
-    // 简单的8x16数字点阵 (每个数字16字节)
-    const uint8_t num_font[10][16] = {
-        // 数字 '0'
-        {0x3C,0x66,0x66,0x6E,0x76,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x3C,0x00},
-        // 数字 '1'  
-        {0x18,0x38,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x18,0x7E,0x00},
-        // 数字 '2'
-        {0x3C,0x66,0x66,0x06,0x06,0x0C,0x18,0x30,0x60,0x60,0x66,0x66,0x66,0x66,0x7E,0x00},
-        // 数字 '3'
-        {0x3C,0x66,0x66,0x06,0x06,0x06,0x1C,0x06,0x06,0x06,0x66,0x66,0x66,0x66,0x3C,0x00},
-        // 数字 '4'
-        {0x0C,0x1C,0x3C,0x6C,0x6C,0xCC,0xCC,0xFE,0x0C,0x0C,0x0C,0x0C,0x0C,0x0C,0x1E,0x00},
-        // 数字 '5'
-        {0x7E,0x60,0x60,0x60,0x60,0x7C,0x06,0x06,0x06,0x06,0x66,0x66,0x66,0x66,0x3C,0x00},
-        // 数字 '6'
-        {0x1C,0x30,0x60,0x60,0x60,0x7C,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x3C,0x00},
-        // 数字 '7'
-        {0x7E,0x66,0x06,0x06,0x0C,0x0C,0x18,0x18,0x18,0x30,0x30,0x30,0x30,0x30,0x30,0x00},
-        // 数字 '8'
-        {0x3C,0x66,0x66,0x66,0x66,0x66,0x3C,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x3C,0x00},
-        // 数字 '9'
-        {0x3C,0x66,0x66,0x66,0x66,0x66,0x66,0x66,0x3E,0x06,0x06,0x0C,0x18,0x30,0x38,0x00}
-    };
-    
-    int digit = c - '0';  // 转换为数字索引
+    int char_index = c - 0x20;  // 转换为字模数组索引(空格是第0个)
     
     for(int row = 0; row < 16; row++) {
-        uint8_t line = num_font[digit][row];
+        uint8_t line = ascii_font[char_index][row];  // 获取该行字模数据
         for(int col = 0; col < 8; col++) {
             if(line & (0x80 >> col)) {
                 Gui_DrawPoint(x + col, y + row, fc);  // 前景色
@@ -308,27 +293,78 @@ void Gui_Draw8x16Char(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, char c)
 }
 
 /**
- * @brief  显示字符串（仅支持数字和空格）
- * @param  x: 显示起始X坐标
- * @param  y: 显示起始Y坐标
- * @param  fc: 前景色（字体颜色）
- * @param  bc: 背景色
- * @param  str: 要显示的字符串指针
- * @return 无
+ * @brief 显示英文字符串（支持完整ASCII可打印字符）
+ * @details 支持显示包含英文字母、数字、符号的完整字符串
+ *          自动处理换行符，支持多行显示
+ * @param x 显示起始X坐标（左上角）
+ * @param y 显示起始Y坐标（左上角）
+ * @param fc 前景色（字体颜色），16位RGB565格式
+ * @param bc 背景色，16位RGB565格式
+ * @param str 要显示的字符串指针
+ * @note 每个字符宽度8像素，高度16像素
+ * @note 遇到'\n'自动换行，行高16像素
+ * @note 支持字符：字母、数字、标点符号、特殊符号等
+ * @example Gui_DrawAsciiString(10, 20, WHITE, BLACK, "Hello World!");
+ * @example Gui_DrawAsciiString(10, 20, RED, BLACK, "Temp: 25.6C\nHumi: 60%");
  */
-void Gui_DrawString(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, const char* str)
+void Gui_DrawAsciiString(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, const char* str)
 {
     uint16_t pos_x = x;
+    uint16_t pos_y = y;
+    
     for(int i = 0; str[i] != '\0'; i++) {
-        if(str[i] >= '0' && str[i] <= '9') {
-            Gui_Draw8x16Char(pos_x, y, fc, bc, str[i]);
+        if(str[i] == '\n') {
+            // 换行处理
+            pos_x = x;
+            pos_y += 16;
+        } else if(str[i] >= 0x20 && str[i] <= 0x7E) {
+            // 显示可打印ASCII字符
+            Gui_DrawAsciiChar(pos_x, pos_y, fc, bc, str[i]);
             pos_x += 8;
-        } else if(str[i] == ' ') {
-            pos_x += 8;  // 空格占位
+        } else if(str[i] == '\t') {
+            // Tab键处理（4个空格宽度）
+            pos_x += 32;
         }
+        // 其他不可打印字符忽略
     }
 }
 
+/**
+ * @brief 显示居中对齐的英文字符串
+ * @details 在指定区域内居中显示英文字符串
+ * @param x 区域起始X坐标
+ * @param y 区域起始Y坐标  
+ * @param width 区域宽度
+ * @param fc 前景色（字体颜色）
+ * @param bc 背景色
+ * @param str 要显示的字符串
+ * @note 字符串长度超过区域宽度时会被截断
+ * @example Gui_DrawAsciiStringCenter(0, 50, 128, WHITE, BLACK, "CENTER");
+ */
+void Gui_DrawAsciiStringCenter(uint16_t x, uint16_t y, uint16_t width, uint16_t fc, uint16_t bc, const char* str)
+{
+    int str_len = 0;
+    // 计算字符串长度（只计算可显示字符）
+    for(int i = 0; str[i] != '\0'; i++) {
+        if(str[i] >= 0x20 && str[i] <= 0x7E) {
+            str_len++;
+        }
+    }
+    
+    int str_width = str_len * 8;  // 字符串总宽度
+    
+    if(str_width <= width) {
+        // 计算居中位置
+        uint16_t center_x = x + (width - str_width) / 2;
+        Gui_DrawAsciiString(center_x, y, fc, bc, str);
+    } else {
+        // 字符串太长，左对齐显示
+        Gui_DrawAsciiString(x, y, fc, bc, str);
+    }
+}
+
+
+/*==================================================================中文字符显示类=========================================================================*/
 /**
  * @brief 显示16x16像素中文字符
  * @details 支持显示16x16像素的中文汉字，使用GB2312/GBK编码
@@ -344,70 +380,53 @@ void Gui_DrawString(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, const char
  */
 void Gui_DrawFont_GBK16(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint8_t *s)
 {
-	unsigned char i,j;
-	unsigned short k,x0;
-	x0=x;
+    unsigned char i,j;
+    unsigned short k,x0;
+    x0=x;
 
-	while(*s) 
-	{	
-		if((*s) < 0x80) 
-		{
-			k=*s;
-			if (k==13) 
-			{
-				x=x0;
-				y+=16;
-			}
-			else 
-			{
-				if (k>32) k-=32; else k=0;
-	
-			    for(i=0;i<16;i++)
-				for(j=0;j<8;j++) 
-					{
-				    	if(asc16[k*16+i]&(0x80>>j))	Gui_DrawPoint(x+j,y+i,fc);
-						else 
-						{
-							if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
-						}
-					}
-				x+=8;
-			}
-			s++;
-		}
-			
-		else 
-		{
-		
-
-			for (k=0;k<hz16_num;k++) 
-			{
-			  if ((hz16[k].Index[0]==*(s))&&(hz16[k].Index[1]==*(s+1)))
-			  { 
-				    for(i=0;i<16;i++)
-				    {
-						for(j=0;j<8;j++) 
-							{
-						    	if(hz16[k].Msk[i*2]&(0x80>>j))	Gui_DrawPoint(x+j,y+i,fc);
-								else {
-									if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
-								}
-							}
-						for(j=0;j<8;j++) 
-							{
-						    	if(hz16[k].Msk[i*2+1]&(0x80>>j))	Gui_DrawPoint(x+j+8,y+i,fc);
-								else 
-								{
-									if (fc!=bc) Gui_DrawPoint(x+j+8,y+i,bc);
-								}
-							}
-				    }
-				}
-			  }
-			s+=2;x+=16;
-		} 
-		
-	}
+    while(*s) 
+    {	
+        if((*s) < 0x80)  // ASCII字符
+        {
+            if(*s >= 0x20 && *s <= 0x7E) {
+                Gui_DrawAsciiChar(x, y, fc, bc, *s);
+            }
+            x += 8;  // ASCII字符宽度8像素
+            s++;
+        }
+        else  // 中文字符
+        {
+            // 保持原来的中文显示逻辑不变
+            for (k=0;k<hz16_num;k++) 
+            {
+                if ((hz16[k].Index[0]==*(s))&&(hz16[k].Index[1]==*(s+1)))
+                { 
+                    for(i=0;i<16;i++)
+                    {
+                        for(j=0;j<8;j++) 
+                        {
+                            if(hz16[k].Msk[i*2]&(0x80>>j))
+                                Gui_DrawPoint(x+j,y+i,fc);
+                            else {
+                                if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
+                            }
+                        }
+                        for(j=0;j<8;j++) 
+                        {
+                            if(hz16[k].Msk[i*2+1]&(0x80>>j))
+                                Gui_DrawPoint(x+j+8,y+i,fc);
+                            else 
+                            {
+                                if (fc!=bc) Gui_DrawPoint(x+j+8,y+i,bc);
+                            }
+                        }
+                    }
+                }
+            }
+            s+=2;
+            x+=16;  // 中文字符宽度16像素
+        } 
+    }
 }
 
 /**
@@ -426,69 +445,65 @@ void Gui_DrawFont_GBK16(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint8_
  */
 void Gui_DrawFont_GBK24(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint8_t *s)
 {
-	unsigned char i,j;
-	unsigned short k;
+    unsigned char i,j;
+    unsigned short k;
 
-	while(*s) 
-	{
-		if( *s < 0x80 ) 
-		{
-			k=*s;
-			if (k>32) k-=32; else k=0;
-
-		    for(i=0;i<16;i++)
-			for(j=0;j<8;j++) 
-				{
-			    	if(asc16[k*16+i]&(0x80>>j))	
-					Gui_DrawPoint(x+j,y+i,fc);
-					else 
-					{
-						if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
-					}
-				}
-			s++;x+=8;
-		}
-		else 
-		{
-
-			for (k=0;k<hz24_num;k++) 
-			{
-			  if ((hz24[k].Index[0]==*(s))&&(hz24[k].Index[1]==*(s+1)))
-			  { 
-				    for(i=0;i<24;i++)
-				    {
-						for(j=0;j<8;j++) 
-							{
-						    	if(hz24[k].Msk[i*3]&(0x80>>j))
-								Gui_DrawPoint(x+j,y+i,fc);
-								else 
-								{
-									if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
-								}
-							}
-						for(j=0;j<8;j++) 
-							{
-						    	if(hz24[k].Msk[i*3+1]&(0x80>>j))	Gui_DrawPoint(x+j+8,y+i,fc);
-								else {
-									if (fc!=bc) Gui_DrawPoint(x+j+8,y+i,bc);
-								}
-							}
-						for(j=0;j<8;j++) 
-							{
-						    	if(hz24[k].Msk[i*3+2]&(0x80>>j))	
-								Gui_DrawPoint(x+j+16,y+i,fc);
-								else 
-								{
-									if (fc!=bc) Gui_DrawPoint(x+j+16,y+i,bc);
-								}
-							}
-				    }
-			  }
-			}
-			s+=2;x+=24;
-		}
-	}
+    while(*s) 
+    {
+        if(*s < 0x80)  // ASCII字符
+        {
+            if(*s >= 0x20 && *s <= 0x7E) {
+                Gui_DrawAsciiChar(x, y, fc, bc, *s);
+            }
+            x += 8;  // ASCII字符宽度8像素
+            s++;
+        }
+        else  // 中文字符
+        {
+            // 保持原来的中文显示逻辑不变
+            for (k=0;k<hz24_num;k++) 
+            {
+                if ((hz24[k].Index[0]==*(s))&&(hz24[k].Index[1]==*(s+1)))
+                { 
+                    for(i=0;i<24;i++)
+                    {
+                        for(j=0;j<8;j++) 
+                        {
+                            if(hz24[k].Msk[i*3]&(0x80>>j))
+                                Gui_DrawPoint(x+j,y+i,fc);
+                            else 
+                            {
+                                if (fc!=bc) Gui_DrawPoint(x+j,y+i,bc);
+                            }
+                        }
+                        for(j=0;j<8;j++) 
+                        {
+                            if(hz24[k].Msk[i*3+1]&(0x80>>j))
+                                Gui_DrawPoint(x+j+8,y+i,fc);
+                            else {
+                                if (fc!=bc) Gui_DrawPoint(x+j+8,y+i,bc);
+                            }
+                        }
+                        for(j=0;j<8;j++) 
+                        {
+                            if(hz24[k].Msk[i*3+2]&(0x80>>j))	
+                                Gui_DrawPoint(x+j+16,y+i,fc);
+                            else 
+                            {
+                                if (fc!=bc) Gui_DrawPoint(x+j+16,y+i,bc);
+                            }
+                        }
+                    }
+                }
+            }
+            s+=2;
+            x+=24;  // 中文字符宽度24像素
+        }
+    }
 }
+
+
+/*==================================================================大号数字类=========================================================================*/
 
 /**
  * @brief 显示32x32像素大号数字字符
@@ -527,8 +542,11 @@ void Gui_DrawFont_Num32(uint16_t x, uint16_t y, uint16_t fc, uint16_t bc, uint16
 	}
 }
 
+/*==================================================================图片/位图显示类=========================================================================*/
+
+
 /**
- * @brief 显示位图图片
+ * @brief 显示位图图片----最基础的位图显示函数
  * @details 在指定位置显示一个位图图片，支持任意尺寸
  *          图片数据为16位RGB565格式的像素数组
  * @param x 显示起始X坐标（左上角）
@@ -553,7 +571,7 @@ void Gui_DrawBitmap(uint16_t x, uint16_t y, uint16_t width, uint16_t height, con
 }
 
 /**
- * @brief 显示小图标
+ * @brief 显示小图标----专门用于正方形图标
  * @details 显示正方形小图标，通常用于天气图标、状态指示等
  * @param x 显示起始X坐标（左上角）
  * @param y 显示起始Y坐标（左上角）

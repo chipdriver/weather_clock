@@ -26,6 +26,7 @@
         "dht11.h": "c",
         "stdint.h": "c",
         "stdarg.h": "c",
-        "stm32f4xx_hal_uart.h": "c"
+        "stm32f4xx_hal_uart.h": "c",
+        "lcd_config.h": "c"
     }
 }

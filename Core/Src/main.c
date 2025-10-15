@@ -106,14 +106,12 @@ int main(void)
 
   // 清屏为黑色
   Lcd_Clear(WHITE);
-  
 
-  // 显示湿度图标 (40x40像素)
-  Gui_DrawImage(10, 50, gImage_humi);  // 在(1,100)位置显示湿度图标
-
-  Gui_DrawImage(86, 50, gImage_temp);  // 在(66,100)位置显示温度图标
-
-  //Gui_DrawImage(1,45,gImage_clock); // 在(1,45)位置显示时钟图标;
+  // 显示湿度图标
+  Gui_DrawImage(1, 50, gImage_humo_nei);  // 在(5,50)位置显示湿度图标
+  Gui_DrawImage(50, 50, gImage_temp_nei);  // 在(65,50)位置显示温度图标
+  Gui_DrawImage(90, 40, gImage_1);  // 在(100,50)位置显示外部温度图标
+  Gui_DrawImage(80, 10, gImage_temp_wai);  // 在(100,50)位置显示外部温度图标
 
 
   uint32_t weather_counter = 0;
@@ -128,21 +126,43 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    
+    /*====================测试================ */
+    // Gui_Circle(20,20,1,RED);
+    //Gui_DrawLine(10,10,50,50,BLUE);
+    //Gui_box(20,20,30,30,GREEN);
+    //Gui_box(20,20,30,30,GREEN);
+    //DisplayButtonDown(20,20,30,30);
+    //Gui_Draw8x16Char(30, 30, BLACK, WHITE, 'A');
+    //Gui_DrawAsciiString(10, 10, BLACK, WHITE, "Hello!"); // 显示英文字符串
+    //Gui_DrawFont_GBK16(10, 10, BLACK, WHITE, (uint8_t*)"Hello!涵涵"); // 显示中英文混合字符串
+    Gui_DrawFont_Num32(10, 100, BLACK, WHITE, 1);
+    /*====================测试================ */
     /*读取DHT11温湿度数据*/
     DHT11_Read(&humidity, &temperature);
-    // 读取成功，显示数据
-    sprintf(buffer, "%d%%",humidity);
-    Gui_DrawString(30,60,BLACK, WHITE, buffer);
+    // 读取成功，显示数据-
+    sprintf(buffer, "%d%%",humidity); 
+    Gui_DrawAsciiString(25,55,BLACK, WHITE, buffer);
 
     /*显示温度*/
     sprintf(buffer, "%d",temperature);
     if(temperature>30)
-      Gui_DrawString(100,60,RED, WHITE, buffer);
+    {
+      Gui_DrawAsciiString(68,55,RED, WHITE, buffer);
+      Gui_Circle(82, 52,1, RED);
+      Gui_DrawAsciiChar(82, 55, RED, WHITE, 'c');  // 显示摄氏度符号
+    }
     else if(temperature<10)
-      Gui_DrawString(100,60,BLUE, WHITE, buffer);
+    {
+      Gui_DrawAsciiString(68,55,BLUE, WHITE, buffer);
+      Gui_Circle(82, 52,1, BLACK);
+      Gui_DrawAsciiChar(82, 55, BLACK, WHITE, 'c');  // 显示摄氏度符号
+    }
     else
-      Gui_DrawString(100,60,BLACK, WHITE, buffer);
+    {
+      Gui_DrawAsciiString(68,55,BLACK, WHITE, buffer);
+      Gui_Circle(82, 52, 1, BLACK);
+     Gui_DrawAsciiChar(82, 55, BLACK, WHITE, 'C');  // 显示摄氏度符号
+    }
 
     get_weather();  // 重新获取天气
     // 等待2秒再读取

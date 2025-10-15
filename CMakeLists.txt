@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     "LCD/Src/font.c"
     "ESP32_Weather/Src/esp32_weather.c"
     "dht11/Src/dht11.c"
+    "LCD/Src/LCD_Config.c"
 )
 
 # Add include paths
