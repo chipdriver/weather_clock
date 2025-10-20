@@ -19,4 +19,6 @@ uint8_t AT_SendFormatAndWait(const char *expect, uint32_t timeout_ms, const char
 void get_weather(void);
 void parse_weather_json(void);
 void receive_weather_data_immediate(void);
+void get_time(void);
+void parse_time_data(void);
 #endif /* __ESP32_WEATHER_H__ */

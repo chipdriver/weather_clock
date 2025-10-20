@@ -135,7 +135,7 @@ int main(void)
     //Gui_Draw8x16Char(30, 30, BLACK, WHITE, 'A');
     //Gui_DrawAsciiString(10, 10, BLACK, WHITE, "Hello!"); // 显示英文字符串
     //Gui_DrawFont_GBK16(10, 10, BLACK, WHITE, (uint8_t*)"Hello!涵涵"); // 显示中英文混合字符串
-    Gui_DrawFont_Num32(10, 100, BLACK, WHITE, 1);
+    //Gui_DrawFont_Num32(10, 100, BLACK, WHITE, 1);
     /*====================测试================ */
     /*读取DHT11温湿度数据*/
     DHT11_Read(&humidity, &temperature);
@@ -167,6 +167,7 @@ int main(void)
     get_weather();  // 重新获取天气
     // 等待2秒再读取
     HAL_Delay(2000);
+    get_time();
     
   }
   /* USER CODE END 3 */

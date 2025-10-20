@@ -1,6 +1,7 @@
 #include "esp32_weather.h"
 #include "lcd_Driver.h"
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
 #include "GUI.h"  
@@ -233,7 +234,7 @@ void parse_weather_json(void)
         json_start = strchr(json_start, '{');
     }
     if (json_start == NULL) {
-        // ✅ 修复：发送到调试串口
+        
         HAL_UART_Transmit(&huart6, (uint8_t*)"未找到JSON数据\n", 20, 1000);
         return;
     }
@@ -247,7 +248,7 @@ void parse_weather_json(void)
     if(temp_pos) {
         sscanf(temp_pos, "\"temperature\":\"%31[^\"]\"", temp_str);
         sprintf(weather_msg, "温度: %s°C\n", temp_str);
-        // ✅ 修复：发送到调试串口
+
         HAL_UART_Transmit(&huart6, (uint8_t*)weather_msg, strlen(weather_msg), 1000);
         char lcd_temp[20];
         sprintf(lcd_temp, "%s", temp_str);  // 英文显示，无换行符
@@ -264,9 +265,173 @@ void parse_weather_json(void)
         Gui_DrawAsciiString(10, 10, BLACK, WHITE, lcd_weather);
     }
 
-    // ✅ 修复：发送到调试串口
     HAL_UART_Transmit(&huart6, (uint8_t*)"天气数据解析完成\n", 24, 1000);
 }
 
 
+static char time_msg[256];
+static uint16_t time_rx_index = 0;
+/**
+ * @brief 获取日期时间
+ * @param 无
+ * @return 无
+ */
+void get_time(void)
+{
+    // 声明单字节接收缓冲变量，用于逐字节接收UART数据
+    uint8_t time_rx_char;
+    
+    // 声明时间戳变量，用于记录开始接收数据的时刻（单位：毫秒）
+    uint32_t start_time;
+    
+    // 清空时间消息缓冲区，将所有256个字节设置为0
+    // 这样可以确保不会残留上次的数据
+    memset(time_msg, 0, sizeof(time_msg));
+    
+    // 重置接收索引为0，准备从缓冲区开头开始存储新数据
+    time_rx_index = 0;
+    
+    // 发送SNTP配置命令到ESP32
+    // AT+CIPSNTPCFG=1,8,"pool.ntp.org","time.google.com"
+    // 参数说明：1=启用SNTP, 8=时区(东八区北京时间), 后面是两个NTP服务器地址
+    // 等待"OK"响应，超时时间5000ms
+    AT_SendFormatAndWait("OK", 5000, "AT+CIPSNTPCFG=1,8,\"%s\",\"%s\"", 
+                        "pool.ntp.org", "time.google.com");
+    
+    // 延时15秒，等待ESP32与NTP服务器同步时间
+    // 这个延时很关键，SNTP协议需要时间进行网络通信和时间同步
+    HAL_Delay(15000);
+    
+    // 定义查询时间的AT命令字符串（包含\r\n结束符）
+    char time_AT[] = "AT+CIPSNTPTIME?\r\n";
+    
+    // 通过UART1向ESP32发送查询时间命令
+    // 发送整个命令字符串，超时时间1000ms
+    HAL_UART_Transmit(&huart1, (uint8_t*)time_AT, strlen(time_AT), 1000);
+    
+    // 记录当前系统时间戳，作为接收数据的起始时间点
+    start_time = HAL_GetTick();
+    
+    // 进入接收循环，最多等待3000ms（3秒）
+    // 只要当前时间与起始时间的差值小于3000ms，就继续尝试接收
+    while(HAL_GetTick() - start_time < 3000)
+    {
+        // 尝试从UART1接收1个字节的数据，超时时间10ms
+        // 如果成功接收到数据，HAL_UART_Receive返回HAL_OK
+        if(HAL_UART_Receive(&huart1, &time_rx_char, 1, 10) == HAL_OK)
+        {
+            // 检查缓冲区是否还有空间（预留1个字节给'\0'结束符）
+            // 防止数组越界，确保安全性
+            if(time_rx_index < sizeof(time_msg) - 1)
+            {
+                // 将接收到的字节存入缓冲区当前位置
+                time_msg[time_rx_index++] = time_rx_char;
+                
+                // 在新位置添加字符串结束符'\0'
+                // 这样time_msg始终是一个有效的C字符串，可以随时使用字符串函数
+                time_msg[time_rx_index] = '\0';
+            }
+        }
+        // 如果HAL_UART_Receive超时（10ms内未收到数据），继续循环等待
+        // 直到总超时时间3000ms到达
+    }
+    
+    // 接收完成后，调用解析函数处理time_msg中的时间数据
+    parse_time_data();
+}
 
+/**
+ * @brief 解析时间数据并显示在LCD
+ * @param 无
+ * @return 无
+ */
+void parse_time_data(void)
+{
+    // 在time_msg缓冲区中查找"+CIPSNTPTIME:"字符串的位置
+    // ESP32返回的完整格式：AT+CIPSNTPTIME?\r\n+CIPSNTPTIME:Fri Oct 17 11:20:01 2025\r\nOK\r\n
+    // strstr函数返回找到的子串的起始指针，如果未找到则返回NULL
+    char *time_start = strstr(time_msg, "+CIPSNTPTIME:");
+    
+    // 检查是否成功找到时间数据
+    if(time_start == NULL) {
+        return;  // 未找到时间数据，直接返回，不进行后续处理
+    }
+    
+    // 指针向后移动13个字符，跳过 "+CIPSNTPTIME:" 这个前缀
+    // 移动后指针指向时间数据的开始位置
+    time_start += 13;
+    
+    // 循环跳过所有前导空格字符
+    // *time_start 获取指针当前位置的字符
+    // 如果是空格，指针向后移动一位，直到遇到非空格字符
+    while(*time_start == ' ') time_start++;
+    
+    // 声明变量用于存储解析出的时间各部分
+    // weekday：星期几的英文缩写（如Fri）
+    // month：月份的英文缩写（如Oct）
+    char weekday[16] = {0};  // 初始化为全0，确保字符串以'\0'结尾
+    char month[16] = {0};
+    
+    // day：日期（1-31）
+    // hour：小时（0-23）
+    // minute：分钟（0-59）
+    // second：秒（0-59）
+    // year：年份（如2025）
+    int day, hour, minute, second, year;
+    
+    // 使用sscanf从字符串中按格式解析时间数据
+    // 格式："Fri Oct 17 11:20:01 2025"
+    // %15s：读取最多15个字符的字符串（星期）
+    // %15s：读取最多15个字符的字符串（月份）
+    // %d：读取整数（日期）
+    // %d:%d:%d：读取三个用冒号分隔的整数（时:分:秒）
+    // %d：读取整数（年份）
+    // 返回值parsed：成功解析的参数个数，应该为7
+    int parsed = sscanf(time_start, "%15s %15s %d %d:%d:%d %d",
+                       weekday, month, &day, &hour, &minute, &second, &year);
+    
+    // 检查是否成功解析了全部7个字段
+    if(parsed == 7) {
+        // 初始化月份数字为1（默认值）
+        int month_num = 1;
+        
+        // 通过一系列if-else语句将英文月份缩写转换为数字1-12
+        // strcmp函数比较两个字符串，相等返回0
+        if(strcmp(month, "Jan") == 0) month_num = 1;       // January 一月
+        else if(strcmp(month, "Feb") == 0) month_num = 2;  // February 二月
+        else if(strcmp(month, "Mar") == 0) month_num = 3;  // March 三月
+        else if(strcmp(month, "Apr") == 0) month_num = 4;  // April 四月
+        else if(strcmp(month, "May") == 0) month_num = 5;  // May 五月
+        else if(strcmp(month, "Jun") == 0) month_num = 6;  // June 六月
+        else if(strcmp(month, "Jul") == 0) month_num = 7;  // July 七月
+        else if(strcmp(month, "Aug") == 0) month_num = 8;  // August 八月
+        else if(strcmp(month, "Sep") == 0) month_num = 9;  // September 九月
+        else if(strcmp(month, "Oct") == 0) month_num = 10; // October 十月
+        else if(strcmp(month, "Nov") == 0) month_num = 11; // November 十一月
+        else if(strcmp(month, "Dec") == 0) month_num = 12; // December 十二月
+        
+        // 声明16字节的字符数组用于存储格式化后的日期字符串
+        char date_display[16];
+        
+        // 使用sprintf格式化日期字符串为 "2025/10/17" 格式
+        // %04d：4位数字，不足前面补0（年份）
+        // %02d：2位数字，不足前面补0（月份和日期）
+        sprintf(date_display, "%04d/%02d/%02d", year, month_num, day);
+        
+        // 声明16字节的字符数组用于存储格式化后的时间字符串
+        char time_display[16];
+        
+        // 使用sprintf格式化时间字符串为 "11:20:01" 格式
+        // %02d：2位数字，不足前面补0（时、分、秒）
+        sprintf(time_display, "%02d:%02d:%02d", hour, minute, second);
+        
+        // 在LCD屏幕上显示日期
+        // 参数：x=10像素, y=90像素, 前景色=黑色, 背景色=白色, 显示内容=日期字符串
+        Gui_DrawAsciiString(10, 90, BLACK, WHITE, date_display);
+        
+        // 在LCD屏幕上显示时间
+        // 参数：x=20像素, y=110像素, 前景色=黑色, 背景色=白色, 显示内容=时间字符串
+        Gui_DrawAsciiString(20, 110, BLACK, WHITE, time_display);
+    }
+    // 如果parsed != 7，说明解析失败，函数直接结束，不显示任何内容
+}
