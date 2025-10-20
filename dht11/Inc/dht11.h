@@ -79,6 +79,9 @@ void DWT_Delay_Init(void);
  *       适用于DHT11通信时序要求
  */
 void DWT_Delay_us(uint32_t us);
+void DHT11_SendStartSignal(void);//DHT11发送开始信号
+bool DHT11_WaitForResponse(void);//等待DHT11响应信号
+void DHT11_ReadData(uint8_t *data);//读取DHT11数据
 
 #ifdef __cplusplus
 }

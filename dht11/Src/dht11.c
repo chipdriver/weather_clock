@@ -54,6 +54,7 @@
  */
 
 #include "dht11.h"  // 包含DHT11驱动头文件
+#include "stm32f4xx_hal_gpio.h"
 
 /*============================================================================
  *                          底层硬件抽象层
@@ -256,72 +257,102 @@ bool DHT11_Init(void) {
  * ✅ 自动校验数据，过滤错误读数
  * ✅ 超时保护，避免死循环
  */
-bool DHT11_Read(int *humidity, int *temperature) {
-    uint8_t data[5] = {0};                               // 存储接收的5字节数据
-    uint32_t t = 0;                                      // 超时计数器
-    
-    // ========== 第1步：主机发送开始信号 ==========
-    DHT_SetOutput();                                     // 设置GPIO为输出模式
-    HAL_GPIO_WritePin(DHT_GPIO_Port, DHT_Pin, GPIO_PIN_RESET);  // 拉低数据线
-    HAL_Delay(18);                                       // 保持低电平18ms，通知DHT11开始测量
-                                                         // 【可调】18-20ms，大多数DHT11使用18ms
-    
-    HAL_GPIO_WritePin(DHT_GPIO_Port, DHT_Pin, GPIO_PIN_SET);    // 拉高数据线
-    DWT_Delay_us(30);                                    // 保持高电平30μs，完成起始信号
-                                                         // 【可调】20-40μs，标准值30μs
-    
-    // ========== 第2步：设置为输入模式，等待DHT11响应 ==========
-    DHT_SetInput();                                      // 设置GPIO为输入模式，释放总线控制权
-    
-    // 等待DHT11拉低数据线开始响应信号（低电平80μs）
-    t = 0;                                               // 重置超时计数器
-    while (HAL_GPIO_ReadPin(DHT_GPIO_Port, DHT_Pin) == GPIO_PIN_SET) {
-        if (++t > 100) return false;                     // 超时保护，防止DHT11无响应
-                                                         // 【可调】100-200，响应慢的传感器可增大
-        DWT_Delay_us(1);                                 // 1μs延时
+
+ /**
+  * @brief 读取DHT11的温湿度
+  * @param humidity 指向湿度变量的指针，用于返回湿度值（%）
+  * @param temperature 指向温度变量的指针，用于返回温度值（°C）
+  * @return bool 读取结果
+  * @retval true 读取成功，数据有效
+  * @retval false 读取失败，数据无效
+  * @note 此函数根据DHT11的通信时序编写
+  */
+ bool DHT11_Read(int *humidity, int *temperature)
+ {
+    uint8_t data[5] = {0}; //存储5字节数据
+
+    //主机发送开始信号-告诉dht11我要读取数据了
+    DHT11_SendStartSignal();
+
+    //DHT11响应信号-告诉主机我准备好了
+    if(DHT11_WaitForResponse() == false)
+    {
+        return false; //响应失败
     }
+
+    //读取40位数据
     
-    // 等待DHT11响应信号的低电平部分结束
-    t = 0;                                               // 重置计数器
-    while (HAL_GPIO_ReadPin(DHT_GPIO_Port, DHT_Pin) == GPIO_PIN_RESET) {
-        if (++t > 100) return false;                     // 超时保护
-        DWT_Delay_us(1);                                 // 1μs延时
+
+    //解析40位数据
+ }
+
+ /**
+  * @brief 主机发送开始信号
+  * @param 无
+  * @return 无
+  * @note 主机通过拉低数据线至少18ms，然后拉高30μs，通知DHT11准备发送数据
+  */
+ void DHT11_SendStartSignal(void)
+ {
+    HAL_GPIO_WritePin(DHT_GPIO_Port,DHT_Pin,GPIO_PIN_RESET); //拉低总线
+    DWT_Delay_us(18000); //保持18ms
+    HAL_GPIO_WritePin(DHT_GPIO_Port,DHT_Pin,GPIO_PIN_SET); //拉高总线
+    DWT_Delay_us(30); //保持30us
+ }
+
+ /**
+  * @brief DHT11响应信号
+  * @param 无
+  * @return bool 响应结果
+  * @retval true 响应成功
+  * @note DHT11在接收到主机的开始信号后，会拉低总线80μs，然后拉高80μs，表示准备好发送数据 
+  */
+bool DHT11_WaitForResponse(void)
+{
+    uint32_t t = 0;//超时计数器
+
+    //等待dht11的低电平
+    while(HAL_GPIO_ReadPin(DHT_GPIO_Port,DHT_Pin) == GPIO_PIN_SET)
+    {
+        if(++t > 100) return false; //超时保护
+        DWT_Delay_us(1); //1us精确延时
     }
-    
-    // 等待DHT11响应信号的高电平部分结束（高电平80μs）
-    t = 0;                                               // 重置计数器
-    while (HAL_GPIO_ReadPin(DHT_GPIO_Port, DHT_Pin) == GPIO_PIN_SET) {
-        if (++t > 100) return false;                     // 超时保护
-        DWT_Delay_us(1);                                 // 1μs延时
+
+    //dht11的低电平响应结束->开始高电平响应
+    t = 0;
+    while(HAL_GPIO_ReadPin(DHT_GPIO_Port,DHT_Pin) == GPIO_PIN_RESET)
+    {
+        if(++t > 100) return false; //超时保护
+        DWT_Delay_us(1); //1us精确延时
     }
-    
-    // ========== 第3步：读取40位数据 ==========
-    // DHT11发送5字节数据，每字节8位，共40位
-    for (int i = 0; i < 5; i++) {                        // 遍历5个字节
-        for (int j = 7; j >= 0; j--) {                   // 遍历每字节的8位，从高位开始
-            if (DHT_ReadBit()) {                         // 读取一个数据位
-                data[i] |= (1 << j);                     // 如果是'1'，设置对应位
+
+    //dht11的高电平响应结束
+    t = 0;
+    while(HAL_GPIO_ReadPin(DHT_GPIO_Port,DHT_Pin) == GPIO_PIN_SET)
+    {
+        if(++t > 100) return false; //超时保护
+        DWT_Delay_us(1); //1us精确延时
+    }
+
+    return true;
+}
+
+/**
+ * @brief 读取DHT11发送的5字节数据，每个字节8位，共40位
+ * @param data 指向5字节数据数组的指针
+ * @return 无
+ */
+void DHT11_ReadData(uint8_t *data)
+{
+    for(int i = 0; i < 5 ; i++) //遍历5个字节
+    {
+        for(int j = 7; j >= 0; j--)   //遍历每个字节的8位，从高位开始
+        {
+            if((DHT_ReadBit))
+            {
+                data[i] |= (1 <<j); //读取到1，设置对应位
             }
-            // 如果是'0'，该位保持默认值0
+            //如果是‘0’，不需要操作，默认就是0
         }
     }
-    
-    // ========== 第4步：数据校验 ==========
-    // 校验和 = 湿度高字节 + 湿度低字节 + 温度高字节 + 温度低字节
-    uint8_t checksum = data[0] + data[1] + data[2] + data[3];
-    if (checksum != data[4]) {                           // 校验和不匹配
-        return false;                                    // 数据错误，返回失败
-    }
-    
-    // ========== 第5步：解析并返回数据 ==========
-    // DHT11数据格式：
-    // data[0] = 湿度整数部分
-    // data[1] = 湿度小数部分（DHT11中为0）
-    // data[2] = 温度整数部分  
-    // data[3] = 温度小数部分（DHT11中为0）
-    // data[4] = 校验和
-    *humidity = data[0];                                 // 返回湿度值（%RH）
-    *temperature = data[2];                              // 返回温度值（℃）
-    
-    return true;                                         // 读取成功
 }
