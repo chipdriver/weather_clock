@@ -86,9 +86,9 @@ static bool DHT_ReadBit(void);    // 读取单个数据位
  */
 void DWT_Delay_Init(void) {
     // 检查跟踪使能位是否已设置
-    if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) {
+    if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk)) { //CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk的意思是检查是否开启了DWT，0：关闭，1：开启
         // 启用DWT和ITM单元的跟踪功能
-        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;    //打开 DWT（数据追踪单元）等调试功能的“总开关”
         // 复位循环计数器
         DWT->CYCCNT = 0;
         // 启用循环计数器
@@ -105,7 +105,7 @@ void DWT_Delay_Init(void) {
  */
 void DWT_Delay_us(uint32_t us) {
     uint32_t startTick = DWT->CYCCNT;                    // 记录起始时刻的计数值
-    uint32_t delayTicks = us * (SystemCoreClock / 1000000);  // 计算需要的时钟周期数
+    uint32_t delayTicks = us * (SystemCoreClock / 1000000);  // 计算需要的时钟周期数，为什么/1000000，因为1s=1000000us，单位转换
     // 等待直到经过足够的时钟周期
     while ((DWT->CYCCNT - startTick) < delayTicks);
 }
