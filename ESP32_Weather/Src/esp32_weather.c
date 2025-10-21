@@ -6,7 +6,7 @@
 #include "usart.h"
 #include "GUI.h"  
 
-static char esp32_rx_buffer[RXBUFFER];
+static char esp32_rx_buffer[RXBUFFER];  //接收缓冲区
 static uint16_t esp32_rx_index = 0;
 char weather_msg[256];
 
@@ -25,6 +25,7 @@ uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
 {
     uint8_t esp32_rx_char;
     uint32_t start_time;
+    char AT_buffer[256];//发送AT的缓冲区
 
     //参数检查
     if(cmd == NULL || expect == NULL || timeout_ms == 0)
@@ -37,8 +38,8 @@ uint8_t AT_SendAndWait(const char *cmd, const char *expect, uint32_t timeout_ms)
     esp32_rx_index = 0;
 
     //发送AT指令
-    HAL_UART_Transmit(&huart1, (uint8_t *)cmd, strlen(cmd), 1000);
-    HAL_UART_Transmit(&huart1, (uint8_t *)"\r\n", 2, 1000);
+    snprintf(AT_buffer,sizeof(AT_buffer),"%s\r\n",cmd);
+    HAL_UART_Transmit(&huart1, (uint8_t *)AT_buffer, strlen(AT_buffer), 1000);
 
     //开始计时
     start_time = HAL_GetTick();

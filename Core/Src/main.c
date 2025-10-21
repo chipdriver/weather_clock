@@ -103,6 +103,7 @@ int main(void)
 
   int humidity, temperature;
   char buffer[100] = {0};
+  char uart_msg[100] = {0};
 
   // 清屏为黑色
   Lcd_Clear(WHITE);
@@ -139,6 +140,13 @@ int main(void)
     /*====================测试================ */
     /*读取DHT11温湿度数据*/
     DHT11_Read(&humidity, &temperature);
+        // ✅ 打印湿度
+    sprintf(uart_msg, "湿度: %d%%\r\n", humidity);
+    HAL_UART_Transmit(&huart6, (uint8_t*)uart_msg, strlen(uart_msg), 1000);
+
+    // ✅ 打印温度
+    sprintf(uart_msg, "温度: %d°C\r\n", temperature);
+    HAL_UART_Transmit(&huart6, (uint8_t*)uart_msg, strlen(uart_msg), 1000);
     // 读取成功，显示数据-
     sprintf(buffer, "%d%%",humidity); 
     Gui_DrawAsciiString(25,55,BLACK, WHITE, buffer);
