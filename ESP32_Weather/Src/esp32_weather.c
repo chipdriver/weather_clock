@@ -99,8 +99,6 @@ uint8_t AT_SendFormatAndWait(const char *expect, uint32_t timeout_ms, const char
     return AT_SendAndWait(cmd_buffer, expect, timeout_ms);
 }
 
-
-
 /*====================================================================WiFi连接=======================================================================*/
 /**
  * @brief 连接wifi
@@ -152,7 +150,7 @@ void get_weather(void)
         // 发送HTTP GET请求
         HAL_UART_Transmit(&huart1, (uint8_t*)http_request, len, 1000);
 
-        // ✅ 立即开始接收，不要延时！
+        //立即开始接收，不要延时！
         receive_weather_data_immediate();
         parse_weather_json();
     }
@@ -166,7 +164,7 @@ void receive_weather_data_immediate(void)
     uint32_t start_time = HAL_GetTick();
     uint32_t last_rx_time = start_time;
     const uint32_t total_timeout = 15000;  // 总超时15秒
-    const uint32_t silence_timeout = 500;  // ✅ 减少静默超时到500ms
+    const uint32_t silence_timeout = 500;  // 减少静默超时到500ms
 
     HAL_UART_Transmit(&huart6, (uint8_t*)"立即开始接收天气数据...\n", 30, 1000);
 
@@ -175,7 +173,7 @@ void receive_weather_data_immediate(void)
 
     while((HAL_GetTick() - start_time) < total_timeout) {
         uint8_t ch;
-        // ✅ 减少单次超时到20ms，提高响应速度
+        // 减少单次超时到20ms，提高响应速度
         if(HAL_UART_Receive(&huart1, &ch, 1, 20) == HAL_OK) {
             
             if(!first_data_received) {
@@ -187,7 +185,7 @@ void receive_weather_data_immediate(void)
             receive_count++;
             
             if(esp32_rx_index < sizeof(esp32_rx_buffer) - 1) {
-                esp32_rx_buffer[esp32_rx_index++] = ch;
+                esp32_rx_buffer[esp32_rx_index++] = ch; 
                 esp32_rx_buffer[esp32_rx_index] = '\0';
             }
             
@@ -198,14 +196,14 @@ void receive_weather_data_immediate(void)
                 HAL_UART_Transmit(&huart6, (uint8_t*)progress, strlen(progress), 1000);
             }
             
-            // ✅ 检查是否收到JSON结束标志
+            // 检查是否收到JSON结束标志
             if(esp32_rx_index > 10 && strstr(esp32_rx_buffer, "}]}") != NULL) {
                 HAL_UART_Transmit(&huart6, (uint8_t*)"检测到JSON结束标志\n", 25, 1000);
                 break;
             }
         }
         
-        // ✅ 只有在收到过数据后才检查静默超时
+        //只有在收到过数据后才检查静默超时
         if(first_data_received && (HAL_GetTick() - last_rx_time) > silence_timeout) {
             HAL_UART_Transmit(&huart6, (uint8_t*)"静默超时，结束接收\n", 23, 1000);
             break;
@@ -248,9 +246,9 @@ void parse_weather_json(void)
 
     if(temp_pos) {
         sscanf(temp_pos, "\"temperature\":\"%31[^\"]\"", temp_str);
-        sprintf(weather_msg, "温度: %s°C\n", temp_str);
-
-        HAL_UART_Transmit(&huart6, (uint8_t*)weather_msg, strlen(weather_msg), 1000);
+            //打印到串口调试
+            sprintf(weather_msg, "温度: %s°C\n", temp_str);
+            HAL_UART_Transmit(&huart6, (uint8_t*)weather_msg, strlen(weather_msg), 1000);
         char lcd_temp[20];
         sprintf(lcd_temp, "%s", temp_str);  // 英文显示，无换行符
         Gui_DrawAsciiString(100, 10, BLACK, WHITE, lcd_temp);

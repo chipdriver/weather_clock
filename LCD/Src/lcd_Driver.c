@@ -65,20 +65,16 @@ void SPI_WriteData(uint8_t Data)
 {
     unsigned char i=0;
     
-    // 循环8次，每次发送1位数据
-    for(i=8; i>0; i--)
+    for(i = 8; i > 0; i--) //MSB，高位优先
     {
-        // 判断最高位是1还是0
-        if(Data & 0x80)    
-            LCD_SDA_SET;  // 如果最高位是1，输出高电平
+        LCD_SCL_CLR;      //时钟下降沿，准备数据（数据在 SDA 上必须稳定）
+        if(Data & 0x80)
+            LCD_SDA_SET;  //如果最高位是1，输出高电平
         else 
-            LCD_SDA_CLR;  // 如果最高位是0，输出低电平
-           
-        LCD_SCL_CLR;      // 时钟下降沿，准备数据
-        // 可以添加短延时保证时序稳定
-        // for(volatile int j=0; j<10; j++); 
-        LCD_SCL_SET;      // 时钟上升沿，从机采样数据
-        Data <<= 1;       // 数据左移1位，准备发送下一位
+            LCD_SDA_CLR;  //如果最高位是0，输出低电平
+        
+        LCD_SCL_SET;      //时钟上升沿，从机采样数据（屏幕此刻读取 SDA）
+        Data <<= 1;       //数据左移1位，准备发送下一位
     }
 }
 
